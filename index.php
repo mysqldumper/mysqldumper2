@@ -8,7 +8,7 @@ if (!file_exists('./includes/configuration.php')) {
     exit;
 }
 require_once ("./includes/functions.php");
-$get_dbs = mysql_query("SHOW DATABASES");
+$get_dbs = $pdo->query("SHOW DATABASES");
 echo "<div id='hover'>
 <center>
 <a href='./index.php'>[~Home~]</a>  
@@ -22,9 +22,9 @@ $username@$host
 <th>Dump</th>
 <th>Drop</th>
 </tr>";
-while ($row = mysql_fetch_array($get_dbs)) {
+while ($row = $get_dbs->fetch()) {
     $db = $row[0];
-    $num_tables = mysql_fetch_object(mysql_query("SELECT COUNT(TABLE_NAME) as num_rows FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$db'"));
+    $num_tables = $pdo->query("SELECT COUNT(TABLE_NAME) as num_rows FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$db'")->fetch(PDO::FETCH_OBJ);
     $num_tables2 = $num_tables->num_rows;
     echo "<tr>
 <td><a href='?database=$db&limit=0'>$db</a></td>
@@ -40,9 +40,9 @@ if (isset($_GET['database'])) {
     $limit = $_GET['limit'];
     $limit2 = $limit + 50;
     $limit3 = $limit - 50;
-    $tables_query = mysql_query("SELECT COUNT(TABLE_NAME) as num_rows FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$database'");
-    $tables_query2 = mysql_query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$database' LIMIT $limit, 50");
-    $num = mysql_fetch_object($tables_query);
+    $tables_query = $pdo->query("SELECT COUNT(TABLE_NAME) as num_rows FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$database'");
+    $tables_query2 = $pdo->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$database' LIMIT $limit, 50");
+    $num = $tables_query->fetch(PDO::FETCH_OBJ);
     $num2 = $num->num_rows;
     echo "<center>
 <a href='?database=$database&limit=$limit3'><~~~~~ Previous Page</a>     
@@ -58,10 +58,10 @@ There are $num2 tables in database: $database
 <th>Prune</th>
 <th>Insert New Row</th>
 </tr>";
-    while ($row = mysql_fetch_array($tables_query2)) {
+    while ($row = $tables_query2->fetch()) {
         $table_name = $row[0];
-        $num_rows = mysql_query("SELECT COUNT(*) as num_rows FROM $database.$table_name");
-        $nr = mysql_fetch_object($num_rows);
+        $num_rows = $pdo->query("SELECT COUNT(*) as num_rows FROM $database.$table_name");
+        $nr = $num_rows->fetch(PDO::FETCH_OBJ);
         $num_rows2 = $nr->num_rows;
         $lim = $_GET['limit'];
         echo "<tr>
@@ -91,23 +91,15 @@ if (isset($_GET['drop'])) {
     $type = $_GET['drop'];
     if ($type == "database") {
         $database = $_GET['db'];
-        $drop_query = mysql_query("DROP DATABASE $database");
-        if ($drop_query) {
-            echo "<script>window.location = './index.php';</script>";
-        } else {
-            error("Failed to drop database or table!");
-        }
+        $drop_query = $pdo->exec("DROP DATABASE $database");
+        echo "<script>window.location = './index.php';</script>";
     }
     if ($type == "table") {
         $database = $_GET['db'];
         $table = $_GET['table'];
         $lim = $_GET['limit'];
-        $drop_query = mysql_query("DROP TABLE $database.$table");
-        if ($drop_query) {
-            echo "<script>window.location = './index.php?database=$database&limit=$lim';</script>";
-        } else {
-            error("Failed to drop database or table!");
-        }
+        $drop_query = $pdo->exec("DROP TABLE $database.$table");
+        echo "<script>window.location = './index.php?database=$database&limit=$lim';</script>";
     }
 }
 //Prune table stuff
@@ -115,8 +107,8 @@ if (isset($_GET['prune'])) {
     $table = $_GET['prune'];
     $db = $_GET['db'];
     $lim = $_GET['limit'];
-    $prune = mysql_query("TRUNCATE $db.$table");
-    if ($prune) {
+    $prune = $pdo->prepare("TRUNCATE $db.$table");
+    if ($prune->execute()) {
         echo "<script>window.location = '?database=$db&limit=$lim';</script>";
     } else {
         error("Failed to prune table!");
@@ -155,7 +147,7 @@ if (isset($_POST['insert_row'])) {
         }
     }
     $iquery.= ")";
-    if (mysql_query($iquery)) {
+    if ($pdo->query($iquery)) {
         $lim = $_GET['limit'];
         echo "<script>window.location = '?database=$db&limit=$lim';</script>";
     } else {
@@ -165,10 +157,10 @@ if (isset($_POST['insert_row'])) {
 if (isset($_GET['insert'])) {
     $db = $_GET['db'];
     $table = $_GET['table'];
-    $getcolumnsquery = mysql_query("SHOW COLUMNS FROM $db.$table");
+    $getcolumnsquery = $pdo->query("SHOW COLUMNS FROM $db.$table");
     $insertcolumns = array();
     $types = array();
-    while ($row = mysql_fetch_array($getcolumnsquery)) {
+    while ($row = $getcolumnsquery->fetch()) {
         $columns = $row['Field'];
         $type = $row['Type'];
         array_push($insertcolumns, $columns);
@@ -190,7 +182,7 @@ if (isset($_GET['delete'])) {
     $column = $_GET['col'];
     $value = $_GET['value'];
     $limit = $_GET['limit'];
-    if (mysql_query("DELETE FROM $database.$table WHERE $column='$value'")) {
+    if ($pdo->query("DELETE FROM $database.$table WHERE $column='$value'")) {
         echo "<script>window.location = '?explore&db=$database&table=$table&limit=$limit';</script>";
     } else {
         error("Failed to delete row!");
@@ -202,12 +194,12 @@ if (isset($_POST['do_search'])) {
     $table = $_GET['table'];
     $database = $_GET['db'];
     $limit = $_GET['limit'];
-    $getcolumnsquery = mysql_query("SHOW COLUMNS FROM $database.$table");
+    $getcolumnsquery = $pdo->query("SHOW COLUMNS FROM $database.$table");
     $s_column = $_POST['search_column'];
     $s_value = $_POST['search_value'];
-    $search_q = mysql_query("SELECT * FROM $database.$table WHERE $s_column='$s_value'");
-    $search_q2 = mysql_query("SELECT COUNT(*) as num_rows FROM $database.$table WHERE $s_column='$s_value'");
-    $search_rows = mysql_fetch_object($search_q2);
+    $search_q = $pdo->query("SELECT * FROM $database.$table WHERE $s_column='$s_value'");
+    $search_q2 = $pdo->query("SELECT COUNT(*) as num_rows FROM $database.$table WHERE $s_column='$s_value'");
+    $search_rows = $search_q2->fetch(PDO::FETCH_OBJ);
     $search_rows2 = $search_rows->num_rows;
     if ($search_rows2 == 0) {
         error("No search results found!");
@@ -218,13 +210,13 @@ Search Results:<br>
 <table border='1' width='95%'>
 <tr>";
         $cdata = array();
-        while ($row = mysql_fetch_array($getcolumnsquery)) {
+        while ($row = $getcolumnsquery->fetch()) {
             $columns = $row['Field'];
             array_push($cdata, $columns);
             echo "<th>$columns</th>";
         }
         echo "<th>Edit Row</th><th>Delete Row</th></tr>";
-        while ($row = mysql_fetch_array($search_q)) {
+        while ($row = $search_q->fetch()) {
             echo "<tr>";
             for ($i = 0;$i < count($cdata) + 2;$i++) {
                 if ($i == count($cdata)) {
@@ -253,8 +245,8 @@ if (isset($_GET['explore'])) {
     $limit2 = 500;
     $limit3 = $limit + 500;
     $limit4 = $limit - 500;
-    $getcolumnsquery = mysql_query("SHOW COLUMNS FROM $database.$table");
-    $lastp = mysql_fetch_object(mysql_query("SELECT COUNT(*) as num_rows FROM $database.$table"));
+    $getcolumnsquery = $pdo->query("SHOW COLUMNS FROM $database.$table");
+    $lastp = $pdo->query("SELECT COUNT(*) as num_rows FROM $database.$table")->fetch(PDO::FETCH_OBJ);
     $lastp2 = $lastp->num_rows - 500;
     echo "<center>
 <form action='' method='post'>
@@ -276,14 +268,14 @@ Search Value: <input type='text' class='regular' name='search_value'>
 <table border='1' width='95%'>
 <tr>";
     $data = array();
-    $getcolumndata = mysql_query("SELECT * FROM $database.$table LIMIT $limit, $limit2");
-    while ($row = mysql_fetch_array($getcolumnsquery)) {
+    $getcolumndata = $pdo->query("SELECT * FROM $database.$table LIMIT $limit, $limit2");
+    while ($row = $getcolumnsquery->fetch()) {
         $columns = $row['Field'];
         array_push($data, $columns);
         echo "<th>$columns</th>";
     }
     echo "<th>Edit Row</th><th>Delete Row</th></tr>";
-    while ($row = mysql_fetch_array($getcolumndata)) {
+    while ($row = $getcolumndata->fetch()) {
         echo "<tr>";
         for ($i = 0;$i < count($data) + 2;$i++) {
             if ($i == count($data)) {
@@ -301,8 +293,8 @@ Search Value: <input type='text' class='regular' name='search_value'>
         }
     }
     echo "</tr></table></center></div>";
-    $allrows = mysql_query("SELECT COUNT(*) as num_rows FROM $database.$table");
-    $numrows = mysql_fetch_object($allrows);
+    $allrows = $pdo->query("SELECT COUNT(*) as num_rows FROM $database.$table");
+    $numrows = $allrows->fetch(PDO::FETCH_OBJ);
     $numrows4 = $numrows->num_rows;
     $numrows2 = floor($numrows4 / 500);
     $numrows3 = $numrows4 / 500;
@@ -342,7 +334,7 @@ if (isset($_POST['do_edit_table'])) {
         }
     }
     $equery.= " WHERE $column='$value2'";
-    if (mysql_query($equery)) {
+    if ($pdo->query($equery)) {
         echo "<script>window.location = '?explore&db=$db&table=$table&limit=$lim';</script>";
     } else {
         echo "$equery";
@@ -354,21 +346,21 @@ if (isset($_GET['edit'])) {
     $table = $_GET['table'];
     $col = $_GET['col'];
     $value = $_GET['value'];
-    $getcolumnsquery = mysql_query("SHOW COLUMNS FROM $db.$table");
+    $getcolumnsquery = $pdo->query("SHOW COLUMNS FROM $db.$table");
     $columns = array();
     $column_type = array();
-    while ($row = mysql_fetch_array($getcolumnsquery)) {
+    while ($row = $getcolumnsquery->fetch()) {
         $columns2 = $row['Field'];
         $type = $row['Type'];
         array_push($columns, $columns2);
         array_push($column_type, $type);
     }
-    $editdataq = mysql_query("SELECT * FROM $db.$table WHERE $col='$value'");
+    $editdataq = $pdo->query("SELECT * FROM $db.$table WHERE $col='$value'");
     echo "<form action ='' method='post'>
 <center>
 Editing row in table: $table<br>
 <table>";
-    while ($row = mysql_fetch_array($editdataq)) {
+    while ($row = $editdataq->fetch()) {
         for ($i = 0;$i < count($columns);$i++) {
             $row2 = $row[$i];
             $row3 = $columns[$i];

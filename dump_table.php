@@ -4,7 +4,7 @@ $db = $_GET['db'];
 $table = $_GET['table'];
 $file_date = date("m_d_Y");
 $file_name = $db . "_" . $table . "_" . $file_date . ".sql";
-$mysqlver = mysql_get_server_info();
+$mysqlver = $pdo->getattribute(PDO::ATTR_SERVER_VERSION);
 $date = date('F j, Y, g:i a');
 $dbtableheader = "-- MySQL Table Dump 
 -- Host: $host  Database: $db Table: $table
@@ -14,7 +14,7 @@ $dbtableheader = "-- MySQL Table Dump
 //Write table header to file
 file_put_contents($file_name, $dbtableheader);
 //Dump table
-dump_table($table, $db, $file_name);
+dump_table($table, $db, $file_name, 0, 0);
 //Compress dump and download
 $fileg2 = file_get_contents($file_name);
 $gzfile = "$file_name.gz";

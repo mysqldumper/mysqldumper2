@@ -13,19 +13,28 @@ if (isset($_POST['install'])) {
     $password = $_POST['mysql_password'];
     $host = $_POST['mysql_host'];
     $port = $_POST['mysql_port'];
-    if (mysql_connect("$host:$port", $username, $password)) {
-        $var = "$";
-        $qoute = '"';
-        $host2 = $var . "host";
-        $port2 = $var . "port";
-        $username2 = $var . "username";
-        $password2 = $var . "password";
-        $memory = $qoute . "memory_limit" . $qoute;
-        $memory2 = $qoute . "9999M" . $qoute;
-        $input = $qoute . "max_input_time" . $qoute;
-        $execution = $qoute . "max_execution_time" . $qoute;
-        $hp = $qoute . "$host2:$port2" . $qoute;
-        $config_file = "<?php
+    try {
+        $pdo = new PDO('mysql:host='.$host.';port='.$port.';dbname=;charset=utf8', 
+        $username,
+        $password, 
+        array(PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+        );
+    } catch(PDOException $e) {
+        die("MySQL Information was not correct!");
+    }
+    $var = "$";
+    $qoute = '"';
+    $host2 = $var . "host";
+    $port2 = $var . "port";
+    $username2 = $var . "username";
+    $password2 = $var . "password";
+    $pdo2 = $var . "pdo";
+    $e2 = $var . "e";
+    $memory = $qoute . "memory_limit" . $qoute;
+    $memory2 = $qoute . "9999M" . $qoute;
+    $input = $qoute . "max_input_time" . $qoute;
+    $execution = $qoute . "max_execution_time" . $qoute;
+    $config_file = "<?php
 //Set some ini settings
 //These are crucial so don't edit them
 @ini_set($memory,$memory2);
@@ -37,17 +46,20 @@ $host2 = '$host';
 $port2 = '$port';
 $username2 = '$username';
 $password2 = '$password';
-if(!mysql_connect($hp, $username2, $password2)) {
-die('Could not connect to MySQL: ' . mysql_error());
+try {
+    $pdo2 = new PDO('mysql:host='.$host2.';port='.$port2.';dbname=;charset=utf8', 
+    $username2,
+    $password2, 
+    array(PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+    );
+} catch(PDOException $e2) {
+    die(".$e2."->getMessage());
 }
 ?>";
-        if (file_put_contents("./includes/configuration.php", $config_file)) {
-            echo "<script>window.location = './index.php';</script>";
-        } else {
-            echo "<center><font size='4' color='#E42217'><b>Failed to write config file!</b></font></center>";
-        }
+    if (file_put_contents("./includes/configuration.php", $config_file)) {
+        echo "<script>window.location = './index.php';</script>";
     } else {
-        echo "<center><font size='4' color='#E42217'><b>The MySQL information is incorrect!<br>Install was not completed!</b></font></center>";
+         echo "<center><font size='4' color='#E42217'><b>Failed to write config file!</b></font></center>";
     }
 }
 $root_path = CleanDir($_SERVER['DOCUMENT_ROOT']);

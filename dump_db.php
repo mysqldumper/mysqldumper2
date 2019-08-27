@@ -9,11 +9,11 @@ $next = $_GET['next'];
 $db = $_GET['db'];
 $file_date = date("m_d_Y");
 $file_name = $db . "_$file_date.sql";
-$mysqlver = mysql_get_server_info();
+$mysqlver = $pdo->getattribute(PDO::ATTR_SERVER_VERSION);
 $date = date('F j, Y, g:i a');
 $all_tables = array();
-$get_tables = mysql_fetch_object(mysql_query("SELECT COUNT(TABLE_NAME) as num_rows FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$db'"));
-$get_tables2 = mysql_query("SHOW TABLES FROM $db");
+$get_tables = $pdo->query("SELECT COUNT(TABLE_NAME) as num_rows FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '$db'")->fetch(PDO::FETCH_OBJ);
+$get_tables2 = $pdo->query("SHOW TABLES FROM $db");
 $rows = $get_tables->num_rows;
 $dbheader = "-- MySQL Database Dump 
 -- Host: $host  Database: $db
@@ -46,7 +46,7 @@ if ($current == $rows) {
         echo "<script>window.location = '$gzfile';</script>";
     }
 } else {
-    while ($arr = mysql_fetch_array($get_tables2)) {
+    while ($arr = $get_tables2->fetch()) {
         array_push($all_tables, $arr[0]);
     }
     $current_t = $all_tables[$current];

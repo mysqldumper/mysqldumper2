@@ -13,13 +13,13 @@ if (isset($_POST['dump_hashes'])) {
     $database = $_POST['hash_db'];
     $table = $_POST['hash_table'];
     $date = date('F j, Y, g:i a');
-    $query = mysql_query("SELECT * FROM $database.$table");
+    $query = $pdo->query("SELECT * FROM $database.$table");
     $header = "This dump was taken on: $date\nFrom database: $database in table: $table\n----------------------------------------------\n";
     if ($format == "hs") {
         $file_name = $database."_hash_salt.txt";
         //Write header to file
         file_put_contents($file_name, $header);
-        while ($row = mysql_fetch_array($query)) {
+        while ($row = $query->fetch()) {
             $hash = $row['password'];
             $salt = $row['salt'];
             $form = "$hash:$salt\n";
@@ -36,7 +36,7 @@ if (isset($_POST['dump_hashes'])) {
         $file_name = $database."_username_hash_salt.txt";
         //Write header to file
         file_put_contents($file_name, $header);
-        while ($row = mysql_fetch_array($query)) {
+        while ($row = $query->fetch()) {
             $username = $row['username'];
             $hash = $row['password'];
             $salt = $row['salt'];
@@ -54,7 +54,7 @@ if (isset($_POST['dump_hashes'])) {
         $file_name = $database."_username_email_hash_salt.txt";
         //Write header to file
         file_put_contents($file_name, $header);
-        while ($row = mysql_fetch_array($query)) {
+        while ($row = $query->fetch()) {
             $email = $row['email'];
             $username = $row['username'];
             $hash = $row['password'];
@@ -73,7 +73,7 @@ if (isset($_POST['dump_hashes'])) {
         $file_name = $database."_email_hash_salt.txt";
         //Write header to file
         file_put_contents($file_name, $header);
-        while ($row = mysql_fetch_array($query)) {
+        while ($row = $query->fetch()) {
             $email = $row['email'];
             $hash = $row['password'];
             $salt = $row['salt'];
@@ -91,7 +91,7 @@ if (isset($_POST['dump_hashes'])) {
         $file_name = $database."_user_information.txt";
         //Write header to file
         file_put_contents($file_name, $header);
-        while ($row = mysql_fetch_array($query)) {
+        while ($row = $query->fetch()) {
             $username = $row['username'];
             $userid = $row['userid'];
             $email = $row['email'];
