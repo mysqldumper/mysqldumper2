@@ -16,18 +16,19 @@ function Download($file) {
     exit;
 }
 function dump_table($d_table, $d_database, $name, $n, $r) {
+    global $pdo;
     $dump_file = "";
     $n2 = $n + 1;
     $file_name = $name;
-    $table_dump = mysql_query("SELECT * FROM $d_database.$d_table");
-    $table_dump2 = mysql_query("SELECT COUNT(*) as num_rows FROM $d_database.$d_table");
-    $res = mysql_fetch_object($table_dump2);
+    $table_dump = $pdo->query("SELECT * FROM $d_database.$d_table");
+    $table_dump2 = $pdo->query("SELECT COUNT(*) as num_rows FROM $d_database.$d_table");
+    $res = $table_dump2->fetch(PDO::FETCH_OBJ);
     $num_rows = $res->num_rows;
     if ($num_rows > 50000) {
         echo "<script>window.location = './split_table.php?current=$n&next=$n2&db=$d_database&lim=0&table=$d_table&nr=$num_rows&r=$r';</script>";
         exit;
     } else {
-        while ($table_data = mysql_fetch_assoc($table_dump)) {
+        while ($table_data = $table_dump->fetch(PDO::FETCH_ASSOC)) {
             $avalues = array_values($table_data);
             $akeys = array_keys($table_data);
             $addslash = array_map('addSlashes', $avalues);
@@ -35,9 +36,9 @@ function dump_table($d_table, $d_database, $name, $n, $r) {
             $values = implode("', '", $addslash);
             $dump_file.= "INSERT INTO `$d_table` (`$fields`) VALUES ('$values');\n";
         }
-        $result2 = mysql_query("SHOW CREATE TABLE $d_database.$d_table");
+        $result2 = $pdo->query("SHOW CREATE TABLE $d_database.$d_table");
         $data2 = array();
-        while ($create_table = mysql_fetch_row($result2)) {
+        while ($create_table = $result2->fetch(PDO::FETCH_NUM)) {
             $ct = $create_table[1];
             $ct2 = "$ct;\n";
             array_push($data2, $ct2);
@@ -54,11 +55,12 @@ function dump_table($d_table, $d_database, $name, $n, $r) {
     }
 }
 function dump_table2($d_table, $d_database, $name, $limit, $last) {
+    global $pdo;
     $dump_file = "";
     $limit2 = $limit * 10000;
     $file_name = $name;
-    $table_dump = mysql_query("SELECT * FROM $d_database.$d_table LIMIT $limit2, 10000");
-    while ($table_data = mysql_fetch_assoc($table_dump)) {
+    $table_dump = $pdo->query("SELECT * FROM $d_database.$d_table LIMIT $limit2, 10000");
+    while ($table_data = $table_dump->fetch(PDO::FETCH_ASSOC)) {
         $avalues = array_values($table_data);
         $akeys = array_keys($table_data);
         $addslash = array_map('addSlashes', $avalues);
@@ -66,9 +68,9 @@ function dump_table2($d_table, $d_database, $name, $limit, $last) {
         $values = implode("', '", $addslash);
         $dump_file.= "INSERT INTO `$d_table` (`$fields`) VALUES ('$values');\n";
     }
-    $result2 = mysql_query("SHOW CREATE TABLE $d_database.$d_table");
+    $result2 = $pdo->query("SHOW CREATE TABLE $d_database.$d_table");
     $data2 = array();
-    while ($create_table = mysql_fetch_row($result2)) {
+    while ($create_table = $result2->fetch(PDO::FETCH_NUM)) {
         $ct = $create_table[1];
         $ct2 = "$ct;\n";
         array_push($data2, $ct2);

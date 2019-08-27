@@ -10,7 +10,13 @@ $host = 'localhost';
 $port = '3306';
 $username = 'root';
 $password = 'root';
-if(!mysql_connect("$host:$port", $username, $password)) {
-die('Could not connect to MySQL: ' . mysql_error());
-}
+try {
+	$pdo = new PDO('mysql:host='.$host.';port='.$port.';dbname=;charset=utf8', 
+	$username,
+	$password, 
+	array(PDO::ATTR_EMULATE_PREPARES => false, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
+	);
+} catch(PDOException $e) {
+		die($e->getMessage());
+	}
 ?>

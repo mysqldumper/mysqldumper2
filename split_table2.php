@@ -11,7 +11,7 @@ $nr = $_GET['nr'];
 $file_date = date("m_d_Y");
 $file_name = $db . "_" . $table . "_" . $file_date . ".sql";
 $divide = floor($nr / 10000);
-$mysqlver = mysql_get_server_info();
+$mysqlver = $pdo->getattribute(PDO::ATTR_SERVER_VERSION);
 $date = date('F j, Y, g:i a');
 $dbtableheader = "-- MySQL Table Dump 
 -- Host: $host  Database: $db Table: $table
